@@ -372,6 +372,17 @@ fu_hwids_add_guid(FuHwids *self, const gchar *guid)
 gboolean
 fu_hwids_setup(FuHwids *self, GError **error)
 {
+	const gchar *keys[] = {
+	    FU_HWIDS_KEY_BIOS_VENDOR,
+	    FU_HWIDS_KEY_BASEBOARD_MANUFACTURER,
+	    FU_HWIDS_KEY_BASEBOARD_PRODUCT,
+	    FU_HWIDS_KEY_FAMILY,
+	    FU_HWIDS_KEY_MANUFACTURER,
+	    FU_HWIDS_KEY_PRODUCT_NAME,
+	    FU_HWIDS_KEY_PRODUCT_SKU,
+	    NULL,
+	};
+
 	g_return_val_if_fail(FU_IS_HWIDS(self), FALSE);
 	g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
 
@@ -386,6 +397,20 @@ fu_hwids_setup(FuHwids *self, GError **error)
 		guid = fu_hwids_get_guid(self, key, &error_local);
 		if (guid == NULL) {
 			g_debug("%s is not available, %s", key, error_local->message);
+			continue;
+		}
+		fu_hwids_add_guid(self, guid);
+	}
+
+	/* add selected extra hardware IDs */
+	for (guint i = 0; keys[i] != NULL; i++) {
+		g_autofree gchar *guid = NULL;
+		g_autoptr(GError) error_local = NULL;
+
+		/* get the GUID and add to hash */
+		guid = fu_hwids_get_guid(self, keys[i], &error_local);
+		if (guid == NULL) {
+			g_debug("%s is not available, %s", keys[i], error_local->message);
 			continue;
 		}
 		fu_hwids_add_guid(self, guid);
