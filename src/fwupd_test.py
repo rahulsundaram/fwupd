@@ -54,23 +54,9 @@ class FwupdTest(dbusmock.DBusTestCase):
             | GLib.LogLevelFlags.LEVEL_CRITICAL
         )
         # set up a fake system D-BUS
-        cls.test_bus = Gio.TestDBus.new(Gio.TestDBusFlags.NONE)
-        cls.test_bus.up()
-        try:
-            del os.environ["DBUS_SESSION_BUS_ADDRESS"]
-        except KeyError:
-            pass
-        os.environ["DBUS_SYSTEM_BUS_ADDRESS"] = cls.test_bus.get_bus_address()
-
-        cls.dbus = Gio.bus_get_sync(Gio.BusType.SYSTEM, None)
-        cls.dbus_con = cls.get_dbus(True)
+        cls.start_system_bus()
 
         override_gi_search_path()
-
-    @classmethod
-    def tearDownClass(cls):
-        cls.test_bus.down()
-        dbusmock.DBusTestCase.tearDownClass()
 
     def setUp(self):
         self.testbed = UMockdev.Testbed.new()
@@ -166,7 +152,7 @@ class FwupdTest(dbusmock.DBusTestCase):
         cancellable = Gio.Cancellable()
         self.addCleanup(cancellable.cancel)
         Gio.DBusProxy.new(
-            self.dbus,
+            Gio.bus_get_sync(Gio.BusType.SYSTEM, None),
             Gio.DBusProxyFlags.DO_NOT_AUTO_START,
             None,
             self.DBUS_NAME,
@@ -242,7 +228,7 @@ class FwupdTest(dbusmock.DBusTestCase):
 
     def ensure_dbus_properties_proxies(self):
         self.props_proxy = Gio.DBusProxy.new_sync(
-            self.dbus,
+            Gio.bus_get_sync(Gio.BusType.SYSTEM, None),
             Gio.DBusProxyFlags.DO_NOT_AUTO_START
             | Gio.DBusProxyFlags.DO_NOT_AUTO_START_AT_CONSTRUCTION
             | Gio.DBusProxyFlags.DO_NOT_LOAD_PROPERTIES
